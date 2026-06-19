@@ -38,13 +38,15 @@ Dado un ticket nuevo, el sistema:
 
 ```mermaid
 flowchart LR
-    A["Fuente: historico de tickets NOC\n(ITSM ServiceNow / Salesforce / Cacti)"] --> B["Ingesta: PySpark en Databricks"]
-    B --> C1["🥉 Bronze: tickets crudos"]
+    A["Fuente: historico de tickets NOC\n(ITSM ServiceNow / Salesforce / Cacti)"] --> L["🛬 Landing zone\n(Volume UC: sample_tickets.csv)"]
+    L --> C1["🥉 Bronze: tickets crudos\n(ingiere del Volume)"]
     C1 --> C2["🥈 Silver: limpieza + features\n(tecnologia, elementos, energia, tiempos)"]
     C2 --> C3["🥇 Gold: dataset de decision por ticket\n+ target despachar/esperar"]
-    C3 --> D["Modelo: clasificacion (scikit-learn + MLflow)"]
-    D --> E["Consumo: dashboard + reglas de notificacion WhatsApp"]
-    G["GitHub: ramas feature_* + README"] -.versiona el codigo.-> B
+    C3 --> D["Modelo: clasificacion (scikit-learn + MLflow)\nregistrado en Unity Catalog"]
+    D --> S["Serving Endpoint\n(consumo online REST)"]
+    C3 --> E["Dashboard + reglas de notificacion WhatsApp"]
+    P["pipeline/run_pipeline.py\n(script Python, sin notebooks)"] -.orquesta.-> L
+    G["GitHub: ramas feature_* + README"] -.versiona el codigo.-> C1
 ```
 
 Detalle en [`docs/arquitectura.md`](./docs/arquitectura.md).
@@ -65,17 +67,47 @@ Clasificador multiclase que, a partir de la capa Gold (`workspace.gold.decision_
 
 ---
 
+## 🚀 Serving Endpoint (consumo del modelo)
+
+El modelo registrado en Unity Catalog se despliega como **Databricks Model Serving** para consumir la recomendación en línea (REST), sin abrir un notebook:
+
+```bash
+pip install databricks-sdk
+export DATABRICKS_HOST="https://dbc-xxxx.cloud.databricks.com"
+export DATABRICKS_TOKEN="****"
+python serving/deploy_serving_endpoint.py        # despliega la última versión del modelo
+```
+
+Con el endpoint activo, se consume así:
+
+```bash
+curl -s -X POST \
+  "$DATABRICKS_HOST/serving-endpoints/noc-decision-cuadrilla/invocations" \
+  -H "Authorization: Bearer $DATABRICKS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"dataframe_records": [{"region": "ANDINA", "tecnologia": "HFC", "...": "..."}]}'
+```
+
+Script: [`serving/deploy_serving_endpoint.py`](./serving/deploy_serving_endpoint.py).
+
+---
+
 ## 🗂️ Estructura del repositorio
 
 ```
 agentes_ingesta/
-├── notebooks/          # notebooks Databricks del pipeline (se iran agregando)
+├── pipeline/           # orquestador del pipeline en Python (run_pipeline.py) - sin notebooks
+├── notebooks/          # notebooks Databricks del pipeline (01_bronze ... 06_notificaciones)
+├── sql/                # pipeline Medallion en SQL (bronze<-Volume, silver, gold) + dashboard
+├── serving/            # despliegue del modelo como Serving Endpoint
 ├── src/                # funciones reutilizables (generador de datos, limpieza, reglas)
 ├── docs/
 │   ├── caso_de_negocio.md
+│   ├── beneficio_costo.md
 │   ├── arquitectura.md
 │   └── diccionario_datos.md
-├── data/               # SOLO muestras pequenas y simuladas (datos reales NO se versionan)
+├── data/               # SOLO muestras simuladas (datos reales NO se versionan)
+├── PENDIENTES.md       # checklist de cierre del proyecto (multi-sesion)
 ├── .gitignore
 ├── requirements.txt
 └── README.md
@@ -96,6 +128,25 @@ El script imprime la distribución del target, los tickets por región y cuánto
 
 ---
 
+## ⚙️ Pipeline automatizado (script de Python, sin notebooks)
+
+Todo el flujo de ingesta se ejecuta con **un solo script de Python** — no hace falta correr notebooks. El script genera la data, la deja en el **Volume (landing zone)** y ejecuta el Medallion `bronze → silver → gold` en el SQL Warehouse:
+
+```bash
+pip install -r requirements.txt
+export DATABRICKS_HOST="https://dbc-xxxx.cloud.databricks.com"
+export DATABRICKS_TOKEN="****"
+export DATABRICKS_WAREHOUSE_ID="xxxxxxxxxxxx"     # SQL Warehouse (Serverless)
+python pipeline/run_pipeline.py                   # 1500 tickets por defecto
+python pipeline/run_pipeline.py --n 5000          # opcional: más volumen
+```
+
+Flujo: `generar_datos.py → CSV → /Volumes/workspace/bronze/landing_zone/ → bronze (lee del Volume) → silver → gold`. La capa **Bronze ahora ingiere el CSV crudo desde el Volume** ([`sql/01_bronze.sql`](./sql/01_bronze.sql)), alineando la implementación con la arquitectura (landing zone → bronze). La variante 100 % SQL que genera los datos sin Volume sigue disponible en [`sql/pipeline_noc_medallion.sql`](./sql/pipeline_noc_medallion.sql).
+
+Script: [`pipeline/run_pipeline.py`](./pipeline/run_pipeline.py).
+
+---
+
 ## 📋 Estado de los componentes (proyecto final)
 
 | # | Componente | Estado |
@@ -104,9 +155,12 @@ El script imprime la distribución del target, los tickets por región y cuánto
 | 2 | Análisis beneficio–costo | 🟢 [`docs/beneficio_costo.md`](./docs/beneficio_costo.md) |
 | 3 | Arquitectura propuesta | 🟢 [`docs/arquitectura.md`](./docs/arquitectura.md) |
 | 4 | Generador de datos simulados | ✅ [`src/generar_datos.py`](./src/generar_datos.py) |
-| 5 | Pipeline Medallion (bronze→silver→gold) | ✅ [`notebooks/`](./notebooks/) · [`sql/`](./sql/) |
-| 6 | Modelo de decisión (despachar / esperar) | ✅ [`notebooks/04_modelo.py`](./notebooks/04_modelo.py) |
+| 5 | Pipeline Medallion (bronze→silver→gold) + automatización | ✅ [`pipeline/run_pipeline.py`](./pipeline/run_pipeline.py) · [`sql/`](./sql/) · [`notebooks/`](./notebooks/) |
+| 6 | Modelo de decisión (despachar / esperar) | ✅ [`notebooks/04_modelo.py`](./notebooks/04_modelo.py) · registrado en Unity Catalog |
 | 7 | Visualizaciones / dashboard + reglas de notificación | ✅ [`notebooks/05_dashboard.py`](./notebooks/05_dashboard.py) · [`06_notificaciones_whatsapp.py`](./notebooks/06_notificaciones_whatsapp.py) |
+| 8 | Serving Endpoint (consumo del modelo) | 🟡 script listo: [`serving/deploy_serving_endpoint.py`](./serving/deploy_serving_endpoint.py) — falta desplegar |
+
+> 📌 Checklist de cierre y pasos pendientes para sesiones futuras: [`PENDIENTES.md`](./PENDIENTES.md).
 
 ---
 

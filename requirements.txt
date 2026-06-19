@@ -14,6 +14,10 @@ mlflow
 # App / dashboard (opcional)
 streamlit
 
+# Automatizacion del pipeline (pipeline/run_pipeline.py) y serving endpoint
+databricks-sdk
+databricks-sql-connector
+
 # Nota: PySpark viene provisto por el runtime de Databricks.
 # Solo descomenta si corres Spark localmente:
 # pyspark
