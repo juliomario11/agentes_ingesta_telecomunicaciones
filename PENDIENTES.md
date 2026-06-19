@@ -21,7 +21,7 @@ Convención de estado: `Pendiente` · `En progreso` · `Finalizado`.
 | # | Componente (peso) | Estado |
 |---|---|---|
 | 1 | Caso de negocio (10%) | Finalizado |
-| 2 | Relación beneficio/coste (10%) | En progreso (falta ROI cuantitativo) |
+| 2 | Relación beneficio/coste (10%) | Finalizado (análisis cualitativo; ROI cuantitativo NO requerido según clase) |
 | 3 | Arquitectura propuesta (10%) | Finalizado |
 | 4 | Pipeline de ingesta (50%) | En progreso (script listo; falta ejecutarlo y evidenciarlo) |
 | 5 | Modelos de ciencia de datos (10%) | Finalizado (modelo + análisis descriptivo) |
@@ -33,7 +33,7 @@ Convención de estado: `Pendiente` · `En progreso` · `Finalizado`.
 
 - [x] Caso de negocio — `docs/caso_de_negocio.md`.
 - [x] Arquitectura propuesta — `docs/arquitectura.md` + diagrama en README.
-- [x] Análisis beneficio/costo (cualitativo) — `docs/beneficio_costo.md`.
+- [x] Análisis beneficio/coste (componente #2) — `docs/beneficio_costo.md` (**cualitativo**). **Finalizado:** el ROI **cuantitativo NO es requerido** (indicado en clase).
 - [x] Medallion poblado en Databricks: `bronze.tickets_noc` (1500), `silver.tickets_noc` (1500), `gold.decision_cuadrilla` (1500), vista `gold.notificaciones_whatsapp` (1311).
 - [x] Modelo entrenado y **registrado en Unity Catalog**: `workspace.gold.modelo_decision_cuadrilla`.
 - [x] CSV crudo subido al Volume `/Volumes/workspace/bronze/landing_zone/sample_tickets.csv`.
@@ -71,8 +71,8 @@ Convención de estado: `Pendiente` · `En progreso` · `Finalizado`.
 - [x] Crear y ejecutar un **análisis descriptivo / EDA** (resumen estadístico, distribuciones, correlaciones) sobre `silver`/`gold`; guardarlo en `notebooks/` o `docs/` con capturas. **Estado: Finalizado** — `docs/analisis_descriptivo.md` + `notebooks/07_eda_analisis_descriptivo.py` + `src/analisis_descriptivo.py`. Las 7 figuras (SVG) quedan **versionadas y embebidas** en el reporte; se regeneran con `python src/analisis_descriptivo.py`.
 - [ ] (Opcional, para el informe) Pegar las 7 figuras del EDA en alta resolución en el documento final. **Estado: Pendiente**
 
-### 2. Relación beneficio/coste (10%) — cuantitativo
-- [ ] Agregar a `docs/beneficio_costo.md` una sección de **ROI cuantitativo** e **ingreso‑vs‑costo** (con cifras ilustrativas y supuestos claros). **Estado: Pendiente**
+### 2. Relación beneficio/coste (10%) — Finalizado
+- [x] Análisis beneficio/coste **cualitativo** (`docs/beneficio_costo.md`). **Estado: Finalizado** — el **ROI cuantitativo NO es requerido** (indicado en clase); el análisis cualitativo es suficiente.
 
 ### 📎 Recomendaciones del PDF (para el informe final)
 - [ ] Anexo con **MLflow logs/métricas** del modelo (recall de `DESPACHAR_CUADRILLA`, accuracy, f1_macro). **Estado: Pendiente**
