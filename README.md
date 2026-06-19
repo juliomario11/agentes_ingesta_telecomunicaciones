@@ -2,7 +2,9 @@
 
 > Proyecto final del curso de Big Data (UNAULA, 2026). Pipeline de datos sobre el **histórico de tickets** de un **NOC (Network Operations Center)** para **clasificar incidencias de red**, consultar **soluciones anteriores** sobre el elemento afectado y **recomendar si despachar o no una cuadrilla**.
 >
-> 📖 Documentación del curso y resúmenes de clase: [`Entrega_BIGDATA`](https://gitlab.com/livysarc1-group/Entrega_BIGDATA).
+> 📖 Documentación del curso y resúmenes de clase: [`Entrega_BIGDATA`](https://github.com/juliomario11/Entrega_BIGDATA).
+>
+> 👤 **Autor:** Mario Daniel Enrique Perez Jimenez
 
 ---
 
@@ -42,10 +44,24 @@ flowchart LR
     C2 --> C3["🥇 Gold: dataset de decision por ticket\n+ target despachar/esperar"]
     C3 --> D["Modelo: clasificacion (scikit-learn + MLflow)"]
     D --> E["Consumo: dashboard + reglas de notificacion WhatsApp"]
-    G["GitLab: ramas feature_* + README"] -.versiona el codigo.-> B
+    G["GitHub: ramas feature_* + README"] -.versiona el codigo.-> B
 ```
 
 Detalle en [`docs/arquitectura.md`](./docs/arquitectura.md).
+
+---
+
+## 🤖 Modelo propuesto
+
+Clasificador multiclase que, a partir de la capa Gold (`workspace.gold.decision_cuadrilla`), predice la **acción recomendada** ante un ticket: `DESPACHAR_CUADRILLA`, `ESPERAR_AUTORRESTABLECIMIENTO` o `TECNICO_URGENTE`. Implementado en [`notebooks/04_modelo.py`](./notebooks/04_modelo.py).
+
+- **Algoritmo:** `RandomForestClassifier` (`n_estimators=300`, `max_depth=12`, `class_weight="balanced"` para compensar que `DESPACHAR_CUADRILLA` domina), dentro de un `Pipeline` de scikit-learn.
+- **Preprocesamiento (`ColumnTransformer`):** `StandardScaler` para las numéricas, `OneHotEncoder` para las categóricas y *passthrough* para las booleanas.
+- **Variables de entrada (22):** 11 numéricas (elementos afectados, clientes afectados, voltaje/amperaje de la fuente, nodos del sector en batería, % de autorrestablecimiento del sector, tiempos, etc.), 5 categóricas (región, tecnología, impacto, urgencia, fuente de monitoreo) y 6 booleanas (VIP, en batería, correlación de monitoreo, falla simultánea NODO/ARPON, etc.).
+- **Métrica priorizada:** **recall de `DESPACHAR_CUADRILLA`** — no dejar fallas reales sin atender pesa más que un despacho innecesario. Se reportan además `accuracy` y `f1_macro`.
+- **Tracking y registro:** **MLflow** (métricas por corrida) y registro en **Unity Catalog** como `workspace.gold.modelo_decision_cuadrilla`.
+
+> ⚠️ **Nota metodológica:** el `target` se deriva de reglas determinísticas sobre estas mismas señales (daño multielemento; energía en batería + correlación de monitoreo), por lo que el modelo aprende la regla casi perfectamente y las métricas resultan muy altas. Es lo esperado con datos **simulados**; con datos reales las etiquetas tendrían ruido y el modelo aportaría mayor valor predictivo.
 
 ---
 
@@ -85,12 +101,12 @@ El script imprime la distribución del target, los tickets por región y cuánto
 | # | Componente | Estado |
 |---|---|---|
 | 1 | Caso de negocio | 🟢 [`docs/caso_de_negocio.md`](./docs/caso_de_negocio.md) |
-| 2 | Análisis beneficio–costo | ⏳ Pendiente |
+| 2 | Análisis beneficio–costo | 🟢 [`docs/beneficio_costo.md`](./docs/beneficio_costo.md) |
 | 3 | Arquitectura propuesta | 🟢 [`docs/arquitectura.md`](./docs/arquitectura.md) |
 | 4 | Generador de datos simulados | ✅ [`src/generar_datos.py`](./src/generar_datos.py) |
-| 5 | Pipeline Medallion (bronze→silver→gold) | ⏳ Pendiente |
-| 6 | Modelo de decisión (despachar / esperar) | ⏳ Pendiente |
-| 7 | Visualizaciones / dashboard + reglas de notificación | ⏳ Pendiente |
+| 5 | Pipeline Medallion (bronze→silver→gold) | ✅ [`notebooks/`](./notebooks/) · [`sql/`](./sql/) |
+| 6 | Modelo de decisión (despachar / esperar) | ✅ [`notebooks/04_modelo.py`](./notebooks/04_modelo.py) |
+| 7 | Visualizaciones / dashboard + reglas de notificación | ✅ [`notebooks/05_dashboard.py`](./notebooks/05_dashboard.py) · [`06_notificaciones_whatsapp.py`](./notebooks/06_notificaciones_whatsapp.py) |
 
 ---
 
@@ -103,5 +119,7 @@ El script imprime la distribución del target, los tickets por región y cuánto
 5. **Anonimiza** cualquier dato sensible (clientes, técnicos, grupos de WhatsApp).
 
 ---
+
+**Autor:** Mario Daniel Enrique Perez Jimenez
 
 *Proyecto final — Especialización en Analítica de Datos, UNAULA 2026.*
