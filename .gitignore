@@ -1,0 +1,24 @@
+# Datos reales (no versionar)
+data/*
+!data/.gitkeep
+!data/sample_*
+*.csv
+*.parquet
+*.xlsx
+
+# Credenciales / secretos
+.env
+*.token
+kaggle.json
+*.pem
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# Sistema
+.DS_Store
+Thumbs.db

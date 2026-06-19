@@ -1,0 +1,19 @@
+# Exploracion y datos
+pandas
+numpy
+
+# Visualizacion
+matplotlib
+seaborn
+plotly
+
+# Modelado
+scikit-learn
+mlflow
+
+# App / dashboard (opcional)
+streamlit
+
+# Nota: PySpark viene provisto por el runtime de Databricks.
+# Solo descomenta si corres Spark localmente:
+# pyspark
