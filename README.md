@@ -53,6 +53,25 @@ Detalle en [`docs/arquitectura.md`](./docs/arquitectura.md).
 
 ---
 
+## 📈 Análisis descriptivo / EDA
+
+Antes de modelar se realiza un **análisis exploratorio (EDA)** sobre la capa Gold (`workspace.gold.decision_cuadrilla`, n = 1.500). Detalle completo con cifras en [`docs/analisis_descriptivo.md`](./docs/analisis_descriptivo.md).
+
+- **Calidad:** 1.500 filas, **0 nulos**, **0 tickets duplicados**; las 1.500 filas pasan los filtros de Silver.
+- **Desbalance del target (clave para el modelado):** `DESPACHAR_CUADRILLA` **82,7 %** · `ESPERAR_AUTORRESTABLECIMIENTO` **10,7 %** · `TECNICO_URGENTE` **6,6 %** → ratio **≈ 12,5 : 1**. Por eso se prioriza **recall/F1 por clase** y `class_weight="balanced"` (la *accuracy* es engañosa).
+- **Hallazgo bivariado:** `ESPERAR_AUTORRESTABLECIMIENTO` **no ocurre nunca en GPON** (la batería de respaldo solo existe en HFC).
+- **Target determinista:** `P(TECNICO_URGENTE | falla_simultanea) = 100 %` y `P(ESPERAR | batería ∧ nodos≥2 ∧ correlación) = 100 %` → conviene **evitar fuga** de `forma_resolucion` / `restablecio_autonomo` como *features*.
+
+Se genera con:
+
+```bash
+python src/analisis_descriptivo.py     # local: estadísticos + 7 figuras en docs/img/eda/
+```
+
+…o ejecutando el notebook [`notebooks/07_eda_analisis_descriptivo.py`](./notebooks/07_eda_analisis_descriptivo.py) sobre las tablas vivas de Databricks. Las 7 figuras (distribución del target, histogramas, categóricas, target por grupo, boxplots, correlación y *drivers*) quedan **versionadas en SVG** en `docs/img/eda/` y **embebidas** en el reporte.
+
+---
+
 ## 🤖 Modelo propuesto
 
 Clasificador multiclase que, a partir de la capa Gold (`workspace.gold.decision_cuadrilla`), predice la **acción recomendada** ante un ticket: `DESPACHAR_CUADRILLA`, `ESPERAR_AUTORRESTABLECIMIENTO` o `TECNICO_URGENTE`. Implementado en [`notebooks/04_modelo.py`](./notebooks/04_modelo.py).
@@ -97,16 +116,18 @@ Script: [`serving/deploy_serving_endpoint.py`](./serving/deploy_serving_endpoint
 ```
 agentes_ingesta/
 ├── pipeline/           # orquestador del pipeline en Python (run_pipeline.py) - sin notebooks
-├── notebooks/          # notebooks Databricks del pipeline (01_bronze ... 06_notificaciones)
+├── notebooks/          # notebooks Databricks (01_bronze ... 06_notificaciones, 07_eda)
 ├── sql/                # pipeline Medallion en SQL (bronze<-Volume, silver, gold) + dashboard
 ├── serving/            # despliegue del modelo como Serving Endpoint
-├── src/                # funciones reutilizables (generador de datos, limpieza, reglas)
+├── src/                # funciones reutilizables (generar_datos.py, analisis_descriptivo.py)
 ├── docs/
 │   ├── caso_de_negocio.md
 │   ├── beneficio_costo.md
 │   ├── arquitectura.md
-│   └── diccionario_datos.md
-├── data/               # SOLO muestras simuladas (datos reales NO se versionan)
+│   ├── analisis_descriptivo.md   # EDA (componente #5)
+│   ├── diccionario_datos.md
+│   └── img/eda/                  # figuras del EDA en SVG (versionadas)
+├── data/               # muestra simulada versionada (sample_tickets.csv); datos reales NO se versionan
 ├── PENDIENTES.md       # checklist de cierre del proyecto (multi-sesion)
 ├── .gitignore
 ├── requirements.txt
@@ -157,8 +178,9 @@ Script: [`pipeline/run_pipeline.py`](./pipeline/run_pipeline.py).
 | 4 | Generador de datos simulados | ✅ [`src/generar_datos.py`](./src/generar_datos.py) |
 | 5 | Pipeline Medallion (bronze→silver→gold) + automatización | ✅ [`pipeline/run_pipeline.py`](./pipeline/run_pipeline.py) · [`sql/`](./sql/) · [`notebooks/`](./notebooks/) |
 | 6 | Modelo de decisión (despachar / esperar) | ✅ [`notebooks/04_modelo.py`](./notebooks/04_modelo.py) · registrado en Unity Catalog |
-| 7 | Visualizaciones / dashboard + reglas de notificación | ✅ [`notebooks/05_dashboard.py`](./notebooks/05_dashboard.py) · [`06_notificaciones_whatsapp.py`](./notebooks/06_notificaciones_whatsapp.py) |
-| 8 | Serving Endpoint (consumo del modelo) | 🟡 script listo: [`serving/deploy_serving_endpoint.py`](./serving/deploy_serving_endpoint.py) — falta desplegar |
+| 7 | Análisis descriptivo / EDA | 🟢 [`docs/analisis_descriptivo.md`](./docs/analisis_descriptivo.md) · [`notebooks/07_eda_analisis_descriptivo.py`](./notebooks/07_eda_analisis_descriptivo.py) · [`src/analisis_descriptivo.py`](./src/analisis_descriptivo.py) |
+| 8 | Visualizaciones / dashboard + reglas de notificación | ✅ [`notebooks/05_dashboard.py`](./notebooks/05_dashboard.py) · [`06_notificaciones_whatsapp.py`](./notebooks/06_notificaciones_whatsapp.py) |
+| 9 | Serving Endpoint (consumo del modelo) | 🟡 script listo: [`serving/deploy_serving_endpoint.py`](./serving/deploy_serving_endpoint.py) — falta desplegar |
 
 > 📌 Checklist de cierre y pasos pendientes para sesiones futuras: [`PENDIENTES.md`](./PENDIENTES.md).
 
