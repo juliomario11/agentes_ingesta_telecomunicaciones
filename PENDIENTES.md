@@ -24,7 +24,7 @@ Convención de estado: `Pendiente` · `En progreso` · `Finalizado`.
 | 2 | Relación beneficio/coste (10%) | En progreso (falta ROI cuantitativo) |
 | 3 | Arquitectura propuesta (10%) | Finalizado |
 | 4 | Pipeline de ingesta (50%) | En progreso (script listo; falta ejecutarlo y evidenciarlo) |
-| 5 | Modelos de ciencia de datos (10%) | En progreso (modelo listo; falta análisis descriptivo) |
+| 5 | Modelos de ciencia de datos (10%) | Finalizado (modelo + análisis descriptivo) |
 | 6 | App o visualización (10%) | En progreso (falta serving endpoint desplegado + capturas) |
 
 ---
@@ -41,6 +41,8 @@ Convención de estado: `Pendiente` · `En progreso` · `Finalizado`.
 - [x] Script de orquestación en Python: `pipeline/run_pipeline.py`.
 - [x] Script de serving endpoint: `serving/deploy_serving_endpoint.py`.
 - [x] README actualizado (enlace a GitHub, diagrama, modelo, pipeline, serving, autor).
+- [x] **Análisis descriptivo / EDA** sobre Gold (componente #5) — `docs/analisis_descriptivo.md`, notebook `notebooks/07_eda_analisis_descriptivo.py` y script reproducible `src/analisis_descriptivo.py`. **Estado: Finalizado** (2026‑06‑19). Hallazgos: 1.500 filas, 0 nulos/duplicados; desbalance del target **12,5 : 1** (DESPACHAR 82,7 % · ESPERAR 10,7 % · TÉCNICO_URGENTE 6,6 %); `ESPERAR` exclusivo de HFC; **7 figuras (SVG) versionadas y embebidas** en `docs/img/eda/`.
+- [x] Muestra simulada **versionada en el repo**: `data/sample_tickets.csv` (1.500 filas, semilla 42) + `.gitignore` ajustado para permitir `data/sample_*.csv` (sin abrir la puerta a datos reales).
 
 ---
 
@@ -66,7 +68,8 @@ Convención de estado: `Pendiente` · `En progreso` · `Finalizado`.
 - [ ] Publicar un **Databricks SQL Dashboard** con `sql/04_dashboard_consultas.sql` y tomar **capturas en alta resolución**. **Estado: Pendiente**
 
 ### 5. Modelos de ciencia de datos (10%) — análisis descriptivo
-- [ ] Crear y ejecutar un **análisis descriptivo / EDA** (resumen estadístico, distribuciones, correlaciones) sobre `silver`/`gold`; guardarlo en `notebooks/` o `docs/` con capturas. **Estado: Pendiente**
+- [x] Crear y ejecutar un **análisis descriptivo / EDA** (resumen estadístico, distribuciones, correlaciones) sobre `silver`/`gold`; guardarlo en `notebooks/` o `docs/` con capturas. **Estado: Finalizado** — `docs/analisis_descriptivo.md` + `notebooks/07_eda_analisis_descriptivo.py` + `src/analisis_descriptivo.py`. Las 7 figuras (SVG) quedan **versionadas y embebidas** en el reporte; se regeneran con `python src/analisis_descriptivo.py`.
+- [ ] (Opcional, para el informe) Pegar las 7 figuras del EDA en alta resolución en el documento final. **Estado: Pendiente**
 
 ### 2. Relación beneficio/coste (10%) — cuantitativo
 - [ ] Agregar a `docs/beneficio_costo.md` una sección de **ROI cuantitativo** e **ingreso‑vs‑costo** (con cifras ilustrativas y supuestos claros). **Estado: Pendiente**

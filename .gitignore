@@ -1,10 +1,17 @@
-# Datos reales (no versionar)
+# Datos: por defecto NO se versionan (pueden contener informacion real)
 data/*
-!data/.gitkeep
-!data/sample_*
 *.csv
 *.parquet
 *.xlsx
+
+# Excepciones versionables: muestras 100% SIMULADAS (sin datos reales).
+# Van DESPUES de las reglas anteriores para que "gane" la negacion (last-match-wins).
+!data/.gitkeep
+!data/sample_tickets.csv
+!data/sample_*.csv
+
+# Nota: las figuras del EDA se versionan como SVG vectorial en docs/img/eda/
+# (son texto y GitHub las renderiza). No se ignoran imagenes.
 
 # Credenciales / secretos
 .env
