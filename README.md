@@ -51,6 +51,20 @@ Detalle en [`docs/arquitectura.md`](./docs/arquitectura.md).
 
 ---
 
+## 🤖 Modelo propuesto
+
+Clasificador multiclase que, a partir de la capa Gold (`workspace.gold.decision_cuadrilla`), predice la **acción recomendada** ante un ticket: `DESPACHAR_CUADRILLA`, `ESPERAR_AUTORRESTABLECIMIENTO` o `TECNICO_URGENTE`. Implementado en [`notebooks/04_modelo.py`](./notebooks/04_modelo.py).
+
+- **Algoritmo:** `RandomForestClassifier` (`n_estimators=300`, `max_depth=12`, `class_weight="balanced"` para compensar que `DESPACHAR_CUADRILLA` domina), dentro de un `Pipeline` de scikit-learn.
+- **Preprocesamiento (`ColumnTransformer`):** `StandardScaler` para las numéricas, `OneHotEncoder` para las categóricas y *passthrough* para las booleanas.
+- **Variables de entrada (22):** 11 numéricas (elementos afectados, clientes afectados, voltaje/amperaje de la fuente, nodos del sector en batería, % de autorrestablecimiento del sector, tiempos, etc.), 5 categóricas (región, tecnología, impacto, urgencia, fuente de monitoreo) y 6 booleanas (VIP, en batería, correlación de monitoreo, falla simultánea NODO/ARPON, etc.).
+- **Métrica priorizada:** **recall de `DESPACHAR_CUADRILLA`** — no dejar fallas reales sin atender pesa más que un despacho innecesario. Se reportan además `accuracy` y `f1_macro`.
+- **Tracking y registro:** **MLflow** (métricas por corrida) y registro en **Unity Catalog** como `workspace.gold.modelo_decision_cuadrilla`.
+
+> ⚠️ **Nota metodológica:** el `target` se deriva de reglas determinísticas sobre estas mismas señales (daño multielemento; energía en batería + correlación de monitoreo), por lo que el modelo aprende la regla casi perfectamente y las métricas resultan muy altas. Es lo esperado con datos **simulados**; con datos reales las etiquetas tendrían ruido y el modelo aportaría mayor valor predictivo.
+
+---
+
 ## 🗂️ Estructura del repositorio
 
 ```
