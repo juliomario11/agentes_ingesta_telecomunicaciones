@@ -8,7 +8,7 @@
 -- Ejecutar sobre workspace.gold.decision_cuadrilla en un SQL Warehouse de
 -- Databricks o como consultas de Databricks SQL Dashboard.
 --
--- Autor: Equipo Big Data NOC
+-- Autor: Mario Daniel Enrique Perez Jimenez
 -- Fecha: 2026-06-18
 -- =============================================================================
 

@@ -2,7 +2,9 @@
 
 > Proyecto final del curso de Big Data (UNAULA, 2026). Pipeline de datos sobre el **histórico de tickets** de un **NOC (Network Operations Center)** para **clasificar incidencias de red**, consultar **soluciones anteriores** sobre el elemento afectado y **recomendar si despachar o no una cuadrilla**.
 >
-> 📖 Documentación del curso y resúmenes de clase: [`Entrega_BIGDATA`](https://gitlab.com/livysarc1-group/Entrega_BIGDATA).
+> 📖 Documentación del curso y resúmenes de clase: [`Entrega_BIGDATA`](https://github.com/juliomario11/Entrega_BIGDATA).
+>
+> 👤 **Autor:** Mario Daniel Enrique Perez Jimenez
 
 ---
 
@@ -42,7 +44,7 @@ flowchart LR
     C2 --> C3["🥇 Gold: dataset de decision por ticket\n+ target despachar/esperar"]
     C3 --> D["Modelo: clasificacion (scikit-learn + MLflow)"]
     D --> E["Consumo: dashboard + reglas de notificacion WhatsApp"]
-    G["GitLab: ramas feature_* + README"] -.versiona el codigo.-> B
+    G["GitHub: ramas feature_* + README"] -.versiona el codigo.-> B
 ```
 
 Detalle en [`docs/arquitectura.md`](./docs/arquitectura.md).
@@ -85,12 +87,12 @@ El script imprime la distribución del target, los tickets por región y cuánto
 | # | Componente | Estado |
 |---|---|---|
 | 1 | Caso de negocio | 🟢 [`docs/caso_de_negocio.md`](./docs/caso_de_negocio.md) |
-| 2 | Análisis beneficio–costo | ⏳ Pendiente |
+| 2 | Análisis beneficio–costo | 🟢 [`docs/beneficio_costo.md`](./docs/beneficio_costo.md) |
 | 3 | Arquitectura propuesta | 🟢 [`docs/arquitectura.md`](./docs/arquitectura.md) |
 | 4 | Generador de datos simulados | ✅ [`src/generar_datos.py`](./src/generar_datos.py) |
-| 5 | Pipeline Medallion (bronze→silver→gold) | ⏳ Pendiente |
-| 6 | Modelo de decisión (despachar / esperar) | ⏳ Pendiente |
-| 7 | Visualizaciones / dashboard + reglas de notificación | ⏳ Pendiente |
+| 5 | Pipeline Medallion (bronze→silver→gold) | ✅ [`notebooks/`](./notebooks/) · [`sql/`](./sql/) |
+| 6 | Modelo de decisión (despachar / esperar) | ✅ [`notebooks/04_modelo.py`](./notebooks/04_modelo.py) |
+| 7 | Visualizaciones / dashboard + reglas de notificación | ✅ [`notebooks/05_dashboard.py`](./notebooks/05_dashboard.py) · [`06_notificaciones_whatsapp.py`](./notebooks/06_notificaciones_whatsapp.py) |
 
 ---
 
@@ -103,5 +105,7 @@ El script imprime la distribución del target, los tickets por región y cuánto
 5. **Anonimiza** cualquier dato sensible (clientes, técnicos, grupos de WhatsApp).
 
 ---
+
+**Autor:** Mario Daniel Enrique Perez Jimenez
 
 *Proyecto final — Especialización en Analítica de Datos, UNAULA 2026.*

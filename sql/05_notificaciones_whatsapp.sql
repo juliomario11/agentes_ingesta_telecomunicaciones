@@ -19,7 +19,7 @@
 --   P2: impacto = 'Alto'  O  urgencia = 'Alta'  O  nodo_vip = true
 --   P3: resto (clientes > 2000 sin otro criterio mayor)
 --
--- Autor: Equipo Big Data NOC
+-- Autor: Mario Daniel Enrique Perez Jimenez
 -- Fecha: 2026-06-18
 -- =============================================================================
 
