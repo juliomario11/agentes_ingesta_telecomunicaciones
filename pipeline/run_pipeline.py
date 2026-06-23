@@ -4,33 +4,43 @@ run_pipeline.py - Orquestador del pipeline Medallion del NOC (SIN notebooks).
 
 Ejecuta, desde un unico script de Python, todo el flujo de ingesta de datos:
 
+    0. Crea (si no existen) los schemas bronze/silver/gold y el Volume landing_zone.
     1. Genera los tickets simulados con src/generar_datos.py  ->  CSV local.
     2. Sube el CSV al Volume de Unity Catalog (landing zone).
     3. Ejecuta el SQL Medallion en el SQL Warehouse:
-         bronze (lee desde el Volume) -> silver -> gold
+         setup -> bronze (lee desde el Volume) -> silver -> gold
     4. Imprime los conteos de verificacion por capa.
 
-Asi se cumple el requisito del curso: la ingesta NO necesita correr notebooks
-de Jupyter; un script de Python la automatiza de principio a fin.
-
 -----------------------------------------------------------------------------
-Requisitos
-    pip install -r requirements.txt          # incluye databricks-sdk
+Configuracion (repo PUBLICO): conexion a Databricks por identificadores + token por entorno.
 
-Configuracion por variables de entorno (NO se hardcodean credenciales):
-    DATABRICKS_HOST            p.ej. https://dbc-xxxx.cloud.databricks.com
-    DATABRICKS_TOKEN          Personal Access Token de Databricks
-    DATABRICKS_WAREHOUSE_ID   id del SQL Warehouse (Serverless) que ejecuta el SQL
-
-Opcionales:
-    CATALOGO   (default: workspace)
-    N_TICKETS  (default: 1500)
-    SEMILLA    (default: 42)
+  *** ADVERTENCIA DE SEGURIDAD ***
+  Este repositorio es PUBLICO. Por eso el TOKEN (Personal Access Token de
+  Databricks, dapi...) NUNCA se hardcodea aqui: dejarlo en el codigo de un repo
+  publico equivale a filtrarlo. El token DEBE venir de la variable de entorno
+  DATABRICKS_TOKEN (o de un Databricks Secret) en tiempo de ejecucion.
+  - El HOST y el SQL Warehouse ID NO son secretos: son identificadores de
+    conexion al workspace y pueden vivir en el codigo sin riesgo.
+  - DATABRICKS_TOKEN es obligatorio: si no esta definido, el script ABORTA
+    (ver el guard en main()).
+  - Si por error llegara a filtrarse un token, REVOCALO de inmediato en
+    Databricks (Settings -> Developer -> Access tokens) y genera uno nuevo.
+  - Las variables de entorno (DATABRICKS_HOST / DATABRICKS_TOKEN /
+    DATABRICKS_WAREHOUSE_ID), si estan definidas, TIENEN PRIORIDAD sobre los
+    valores del codigo.
+-----------------------------------------------------------------------------
 
 Uso
     python pipeline/run_pipeline.py
     python pipeline/run_pipeline.py --n 5000 --semilla 7
     python pipeline/run_pipeline.py --skip-generate     # usa el CSV ya existente
+
+Orden de ejecucion para el SERVING ENDPOINT:
+    El serving (serving/deploy_serving_endpoint.py) sirve el modelo
+    workspace.gold.modelo_decision_cuadrilla, que ENTRENA y REGISTRA el notebook
+    notebooks/04_modelo.py. Por lo tanto: primero corre este pipeline, luego
+    04_modelo.py (registra el modelo en Unity Catalog) y SOLO DESPUES despliega
+    el serving endpoint.
 
 Autor: Mario Daniel Enrique Perez Jimenez
 """
@@ -42,18 +52,32 @@ import sys
 import time
 from pathlib import Path
 
+# =============================================================================
+# Conexion a Databricks. Repo PUBLICO: HOST y WAREHOUSE_ID son identificadores
+# (no secretos) y viven aqui; el TOKEN jamas se hardcodea y SOLO se toma de la
+# variable de entorno DATABRICKS_TOKEN. Las env vars tienen prioridad.
+# =============================================================================
+DATABRICKS_HOST = "https://dbc-393a3afa-a710.cloud.databricks.com"
+DATABRICKS_TOKEN = ""  # repo PUBLICO: NO hardcodear. Se toma de la env var DATABRICKS_TOKEN.
+DATABRICKS_WAREHOUSE_ID = "cf44bf1905ce0de9"
+
+# Las env vars, si existen, mandan sobre lo hardcodeado.
+HOST = os.environ.get("DATABRICKS_HOST") or DATABRICKS_HOST
+TOKEN = os.environ.get("DATABRICKS_TOKEN") or DATABRICKS_TOKEN
+WAREHOUSE_ID = os.environ.get("DATABRICKS_WAREHOUSE_ID") or DATABRICKS_WAREHOUSE_ID
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 
 CSV_NAME = "sample_tickets.csv"
-SQL_FILES = ("01_bronze.sql", "02_silver.sql", "03_gold.sql")
+SQL_FILES = ("00_setup.sql", "01_bronze.sql", "02_silver.sql", "03_gold.sql")
 
 
 def _client():
-    """WorkspaceClient autenticado por entorno (DATABRICKS_HOST / DATABRICKS_TOKEN)."""
+    """WorkspaceClient autenticado con el host/token hardcodeados (o env)."""
     from databricks.sdk import WorkspaceClient
 
-    return WorkspaceClient()
+    return WorkspaceClient(host=HOST, token=TOKEN)
 
 
 def _run_sql(w, warehouse_id: str, statement: str, catalog: str):
@@ -66,7 +90,6 @@ def _run_sql(w, warehouse_id: str, statement: str, catalog: str):
         catalog=catalog,
         wait_timeout="50s",
     )
-    # Si sigue en ejecucion tras el wait inicial, hacemos polling.
     terminal = {StatementState.SUCCEEDED, StatementState.FAILED,
                 StatementState.CANCELED, StatementState.CLOSED}
     while resp.status and resp.status.state not in terminal:
@@ -81,7 +104,7 @@ def _run_sql(w, warehouse_id: str, statement: str, catalog: str):
 
 
 def _split_statements(sql_text: str):
-    """Divide un archivo .sql en sentencias (estos archivos no usan ';' internos)."""
+    """Divide un archivo .sql en sentencias separadas por ';'."""
     return [s.strip() for s in sql_text.split(";") if s.strip()]
 
 
@@ -103,15 +126,19 @@ def main() -> None:
                     help="No sube el CSV al Volume (asume que ya esta alli)")
     args = ap.parse_args()
 
-    warehouse_id = os.environ.get("DATABRICKS_WAREHOUSE_ID")
-    if not warehouse_id:
-        sys.exit("ERROR: define DATABRICKS_WAREHOUSE_ID (id del SQL Warehouse).")
+    # Guard de seguridad (repo PUBLICO): el token jamas se hardcodea.
+    if not TOKEN:
+        sys.exit("ERROR: define la variable de entorno DATABRICKS_TOKEN (repo publico: el token no se hardcodea).")
+
+    warehouse_id = WAREHOUSE_ID
+    if not warehouse_id or "xxxx" in warehouse_id:
+        sys.exit("ERROR: define DATABRICKS_WAREHOUSE_ID (variable de entorno o constante de conexion).")
 
     volume_dir = f"/Volumes/{args.catalogo}/bronze/landing_zone"
     volume_path = f"{volume_dir}/{CSV_NAME}"
     local_csv = REPO_ROOT / "data" / CSV_NAME
 
-    # 1) Generar la data simulada -------------------------------------------------
+    # 1) Generar la data simulada
     if args.skip_generate and local_csv.exists():
         print(f"[1/4] Omitida generacion; uso {local_csv}")
     else:
@@ -124,7 +151,7 @@ def main() -> None:
 
     w = _client()
 
-    # 2) Subir el CSV al Volume (landing zone) -----------------------------------
+    # 2) Subir el CSV al Volume (landing zone)
     if args.skip_upload:
         print(f"[2/4] Omitida subida; asumo {volume_path} ya presente")
     else:
@@ -132,7 +159,7 @@ def main() -> None:
             w.files.upload(volume_path, fh, overwrite=True)
         print(f"[2/4] CSV subido al Volume: {volume_path}")
 
-    # 3) Ejecutar el SQL Medallion (bronze<-Volume -> silver -> gold) ------------
+    # 3) Ejecutar el SQL Medallion (setup -> bronze<-Volume -> silver -> gold)
     sql_dir = REPO_ROOT / "sql"
     for archivo in SQL_FILES:
         texto = (sql_dir / archivo).read_text(encoding="utf-8")
@@ -140,7 +167,7 @@ def main() -> None:
             _run_sql(w, warehouse_id, stmt, args.catalogo)
         print(f"[3/4] Ejecutado {archivo}")
 
-    # 4) Verificacion por capa ----------------------------------------------------
+    # 4) Verificacion por capa
     print("[4/4] Verificacion de conteos:")
     for tabla in (
         f"{args.catalogo}.bronze.tickets_noc",
@@ -151,6 +178,10 @@ def main() -> None:
         print(f"        {tabla}: {_scalar(resp)} filas")
 
     print("\nPipeline Medallion completado correctamente.")
+    print("\nSIGUIENTE PASO para el serving endpoint:")
+    print("  1) Ejecuta notebooks/04_modelo.py  -> entrena y REGISTRA el modelo")
+    print("     workspace.gold.modelo_decision_cuadrilla en Unity Catalog.")
+    print("  2) Luego: python serving/deploy_serving_endpoint.py")
 
 
 if __name__ == "__main__":
