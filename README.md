@@ -49,6 +49,12 @@ flowchart LR
     G["GitHub: ramas feature_* + README"] -.versiona el codigo.-> C1
 ```
 
+![Flujo del pipeline de Agentes de Ingesta NOC](https://pub.hyperagent.com/api/published/pbf01KVSFES2T_WQAJG38FY13P9N20/flujo_pipeline_noc.png)
+
+*Diagrama de flujo de extremo a extremo: NOC → Landing Zone (Volume) → Bronze/Silver/Gold → Modelo ML (Unity Catalog) → Decisión (DESPACHAR/ESPERAR/TÉCNICO_URGENTE) → Serving / Dashboard / WhatsApp.*
+
+> 🟢 **Nota de producción:** en **producción**, la capa **Bronze ingiere los tickets desde una tabla PostgreSQL** (la base operativa del NOC), **no desde un CSV**. El `sample_tickets.csv` en el Volume (landing zone) existe **solo para la simulación/demo del curso**; en el despliegue real se sustituye la fuente del Volume por una lectura directa de PostgreSQL hacia Bronze.
+
 Detalle en [`docs/arquitectura.md`](./docs/arquitectura.md).
 
 ---
@@ -92,8 +98,8 @@ El modelo registrado en Unity Catalog se despliega como **Databricks Model Servi
 
 ```bash
 pip install databricks-sdk
-export DATABRICKS_HOST="https://dbc-xxxx.cloud.databricks.com"
-export DATABRICKS_TOKEN="****"
+export DATABRICKS_HOST="https://dbc-393a3afa-a710.cloud.databricks.com"
+export DATABRICKS_TOKEN="****"   # token por entorno: NUNCA se hardcodea (repo público)
 python serving/deploy_serving_endpoint.py        # despliega la última versión del modelo
 ```
 
@@ -114,10 +120,10 @@ Script: [`serving/deploy_serving_endpoint.py`](./serving/deploy_serving_endpoint
 ## 🗂️ Estructura del repositorio
 
 ```
-agentes_ingesta/
+agentes_ingesta_telecomunicaciones/
 ├── pipeline/           # orquestador del pipeline en Python (run_pipeline.py) - sin notebooks
 ├── notebooks/          # notebooks Databricks (01_bronze ... 06_notificaciones, 07_eda)
-├── sql/                # pipeline Medallion en SQL (bronze<-Volume, silver, gold) + dashboard
+├── sql/                # pipeline Medallion en SQL (00_setup, bronze<-Volume, silver, gold, notificaciones, dashboard)
 ├── serving/            # despliegue del modelo como Serving Endpoint
 ├── src/                # funciones reutilizables (generar_datos.py, analisis_descriptivo.py)
 ├── docs/
@@ -155,9 +161,9 @@ Todo el flujo de ingesta se ejecuta con **un solo script de Python** — no hace
 
 ```bash
 pip install -r requirements.txt
-export DATABRICKS_HOST="https://dbc-xxxx.cloud.databricks.com"
-export DATABRICKS_TOKEN="****"
-export DATABRICKS_WAREHOUSE_ID="xxxxxxxxxxxx"     # SQL Warehouse (Serverless)
+export DATABRICKS_HOST="https://dbc-393a3afa-a710.cloud.databricks.com"
+export DATABRICKS_TOKEN="****"                    # token por entorno: NUNCA se hardcodea (repo público)
+export DATABRICKS_WAREHOUSE_ID="cf44bf1905ce0de9" # SQL Warehouse (Serverless)
 python pipeline/run_pipeline.py                   # 1500 tickets por defecto
 python pipeline/run_pipeline.py --n 5000          # opcional: más volumen
 ```
