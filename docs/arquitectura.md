@@ -19,6 +19,8 @@ flowchart LR
 - Tabla Delta en `workspace.bronze.tickets_noc`.
 - Objetivo: trazabilidad total del dato de origen (ServiceNow, Salesforce, Cacti).
 
+> 🟢 **Nota de producción:** en **producción**, Bronze ingiere los tickets desde una **tabla PostgreSQL** (la base operativa del NOC), **no desde un CSV**. El `sample_tickets.csv` en el Volume (landing zone) es **solo para la simulación/demo del curso**; en el despliegue real la lectura del Volume se reemplaza por una lectura directa de la tabla PostgreSQL hacia la capa Bronze (vía JDBC / conector federado), manteniendo el resto del Medallion sin cambios.
+
 ### 🥈 Silver — datos limpios + features
 - Tipado de fechas, normalización de texto.
 - Derivar:
@@ -36,7 +38,7 @@ flowchart LR
 - Tabla `workspace.gold.decision_cuadrilla`.
 
 ## Modelo
-- Clasificación binaria: `DESPACHAR_CUADRILLA` vs `ESPERAR_AUTORRESTABLECIMIENTO`.
+- Clasificación multiclase: `DESPACHAR_CUADRILLA` · `ESPERAR_AUTORRESTABLECIMIENTO` · `TECNICO_URGENTE`.
 - `scikit-learn` (pipeline con encoders) + registro en **MLflow** (params, métricas, modelo con signature en Unity Catalog).
 - Métricas: priorizar **recall** de `DESPACHAR_CUADRILLA` (no dejar fallas reales sin atender); reportar precision, F1 y matriz de confusión.
 
