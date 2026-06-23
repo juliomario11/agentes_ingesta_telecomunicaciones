@@ -12,17 +12,22 @@ Ejecuta, desde un unico script de Python, todo el flujo de ingesta de datos:
     4. Imprime los conteos de verificacion por capa.
 
 -----------------------------------------------------------------------------
-Configuracion (repo PRIVADO): credenciales HARDCODEADAS abajo.
+Configuracion (repo PUBLICO): conexion a Databricks por identificadores + token por entorno.
 
   *** ADVERTENCIA DE SEGURIDAD ***
-  Este archivo contiene un Personal Access Token de Databricks en texto plano.
-  - Manten el repositorio PRIVADO en todo momento.
-  - Si el token se filtra o el repo se vuelve publico, REVOCA el token de
-    inmediato en Databricks (Settings -> Developer -> Access tokens) y genera
-    uno nuevo.
+  Este repositorio es PUBLICO. Por eso el TOKEN (Personal Access Token de
+  Databricks, dapi...) NUNCA se hardcodea aqui: dejarlo en el codigo de un repo
+  publico equivale a filtrarlo. El token DEBE venir de la variable de entorno
+  DATABRICKS_TOKEN (o de un Databricks Secret) en tiempo de ejecucion.
+  - El HOST y el SQL Warehouse ID NO son secretos: son identificadores de
+    conexion al workspace y pueden vivir en el codigo sin riesgo.
+  - DATABRICKS_TOKEN es obligatorio: si no esta definido, el script ABORTA
+    (ver el guard en main()).
+  - Si por error llegara a filtrarse un token, REVOCALO de inmediato en
+    Databricks (Settings -> Developer -> Access tokens) y genera uno nuevo.
   - Las variables de entorno (DATABRICKS_HOST / DATABRICKS_TOKEN /
     DATABRICKS_WAREHOUSE_ID), si estan definidas, TIENEN PRIORIDAD sobre los
-    valores hardcodeados.
+    valores del codigo.
 -----------------------------------------------------------------------------
 
 Uso
@@ -48,12 +53,13 @@ import time
 from pathlib import Path
 
 # =============================================================================
-# Credenciales HARDCODEADAS (repo privado). REEMPLAZA por tus valores reales.
-# Si defines las variables de entorno equivalentes, esas tienen prioridad.
+# Conexion a Databricks. Repo PUBLICO: HOST y WAREHOUSE_ID son identificadores
+# (no secretos) y viven aqui; el TOKEN jamas se hardcodea y SOLO se toma de la
+# variable de entorno DATABRICKS_TOKEN. Las env vars tienen prioridad.
 # =============================================================================
-DATABRICKS_HOST = "https://dbc-xxxxxxxx-xxxx.cloud.databricks.com"   # <-- REEMPLAZA
-DATABRICKS_TOKEN = "dapiXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"            # <-- REEMPLAZA
-DATABRICKS_WAREHOUSE_ID = "xxxxxxxxxxxxxxxx"                          # <-- REEMPLAZA (SQL Warehouse ID)
+DATABRICKS_HOST = "https://dbc-393a3afa-a710.cloud.databricks.com"
+DATABRICKS_TOKEN = ""  # repo PUBLICO: NO hardcodear. Se toma de la env var DATABRICKS_TOKEN.
+DATABRICKS_WAREHOUSE_ID = "cf44bf1905ce0de9"
 
 # Las env vars, si existen, mandan sobre lo hardcodeado.
 HOST = os.environ.get("DATABRICKS_HOST") or DATABRICKS_HOST
@@ -120,9 +126,13 @@ def main() -> None:
                     help="No sube el CSV al Volume (asume que ya esta alli)")
     args = ap.parse_args()
 
+    # Guard de seguridad (repo PUBLICO): el token jamas se hardcodea.
+    if not TOKEN:
+        sys.exit("ERROR: define la variable de entorno DATABRICKS_TOKEN (repo publico: el token no se hardcodea).")
+
     warehouse_id = WAREHOUSE_ID
     if not warehouse_id or "xxxx" in warehouse_id:
-        sys.exit("ERROR: define DATABRICKS_WAREHOUSE_ID (constante hardcodeada o variable de entorno).")
+        sys.exit("ERROR: define DATABRICKS_WAREHOUSE_ID (variable de entorno o constante de conexion).")
 
     volume_dir = f"/Volumes/{args.catalogo}/bronze/landing_zone"
     volume_path = f"{volume_dir}/{CSV_NAME}"
