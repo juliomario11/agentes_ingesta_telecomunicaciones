@@ -95,7 +95,7 @@ Convención de estado: `Pendiente` · `En progreso` · `Finalizado`.
 
 ---
 
-*Generado por una sesión de agentes el 2026‑06‑19. Actualizado el 2026‑06‑23 (Vega, ingeniero de datos).*
+*Generado por una sesión de agentes el 2026‑06‑19. Actualizado el 2026‑06‑23.*
 *Autor del proyecto: Mario Daniel Enrique Perez Jimenez.*
 
 ---
