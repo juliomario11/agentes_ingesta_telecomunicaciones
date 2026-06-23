@@ -97,3 +97,20 @@ Convención de estado: `Pendiente` · `En progreso` · `Finalizado`.
 
 *Generado por una sesión de agentes el 2026‑06‑19. Actualizado el 2026‑06‑23 (Vega, ingeniero de datos).*
 *Autor del proyecto: Mario Daniel Enrique Perez Jimenez.*
+
+---
+
+## 🎓 Pendientes derivados de Clases 3 y 4 (revisión de transcripciones · 2026‑06‑23)
+
+> Estos ítems salen de revisar las transcripciones reales de la **Clase 3 (sáb 20 jun)** y la **Clase 4 (lun 22 jun)**. Son refuerzos/ampliaciones de lo que el docente enfatizó; no duplican los ítems ya listados arriba. Cita la clase de origen entre paréntesis.
+
+- [ ] **Evidenciar el LINAJE de extremo a extremo en Unity Catalog** (`bronze → silver → gold → modelo → serving endpoint`), no solo de bronze. Capturar el *lineage graph* del catálogo en alta resolución. **(Clase 4)** — el docente fue explícito: *"vénganse para el linaje… de dónde viene la información"* y *"este es el 50% de su trabajo"*. El catálogo/linaje **pesa ~50% de la nota**. **Estado: Pendiente.**
+- [ ] **Construir una APP de visualización para el usuario final** (Gradio / Dash / Streamlit o **Databricks App**) que consuma en vivo la recomendación del modelo (`DESPACHAR` / `ESPERAR` / `TÉCNICO_URGENTE`), además del dashboard SQL. **(Clase 3 y 4)** — *"la aplicación o visualización final para que el usuario aproveche el servicio"* (C3); *"crear una app customizada a punta de código"* (C4). Es el componente App/Visualización (10%) en su forma "PP" que pidió el profe. **Estado: Pendiente.**
+- [ ] **Documentar la conexión reproducible Databricks ↔ VS Code / CLI** (`databricks-cli` o extensión de VS Code) para ejecutar el pipeline y publicar desde local. **(Clase 3 y 4)** — el docente mostró la conexión por Visual Studio Code / CLI como flujo de trabajo profesional. **Estado: Pendiente.**
+- [ ] **Habilitar y documentar Genie** sobre las tablas `gold` (p. ej. `gold.decision_cuadrilla`) para consultas en lenguaje natural, con 2‑3 preguntas de ejemplo y su resultado. **(Clase 3 y 4)** — Genie se mencionó repetidamente como demo/entregable esperado. **Estado: Pendiente.**
+- [ ] **Documentar los formatos del Lakehouse (Delta / Parquet / Iceberg)** y dejar registrada la **variante de pipeline declarativo (Lakeflow / Delta Live Tables)** como alternativa al script imperativo, discutiendo `append` vs `overwrite` y la orquestación por *jobs*. **(Clase 3: Parquet/Iceberg/Delta · Clase 4: enfoque declarativo)**. **Estado: Pendiente.**
+- [ ] **Anexar la matriz de confusión del modelo** (además de las métricas de MLflow ya listadas) en el informe final, por clase del target. **(Clase 4)** — el docente trabajó la matriz de confusión como evidencia de evaluación. **Estado: Pendiente.**
+
+> 🔎 **Nota de alcance:** el ejercicio de **CNN para clasificar imágenes reales vs generadas por IA** (Clase 4) y el **dataset de riesgo de crédito de Kaggle** (Clase 3) fueron *ejemplos de workshop*, **no aplican directamente** al caso NOC; se omiten del alcance del proyecto salvo que se quieran citar como referencia metodológica en el informe.
+
+*Sección añadida el 2026‑06‑23 tras la revisión de las transcripciones de las Clases 3 y 4.*
